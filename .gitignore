@@ -1,1 +1,5 @@
 settings.json
+build/
+dist/
+main.build/
+*.exe

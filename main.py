@@ -7,6 +7,7 @@ import tkinter as tk
 from tkinter import ttk
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
+import sys
 
 # Default configuration
 config = {
@@ -19,8 +20,14 @@ config = {
     "user_id": ""
 }
 
-# Set configuration file path relative to script location
-CONFIG_FILE = os.path.join(os.path.dirname(__file__), "settings.json")
+# Get the base directory where the script or exe resides
+if getattr(sys, 'frozen', False):  # Running as a PyInstaller bundle
+    BASE_DIR = os.path.dirname(sys.executable)
+else:
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# Set configuration file path relative to script or exe location
+CONFIG_FILE = os.path.join(BASE_DIR, "settings.json")
 LOG_DIR = os.path.expanduser("~/Documents/EVE/logs/Gamelogs")
 DECLINATION_REGEX = r"Your cloak deactivates"
 LISTENER_REGEX = r"Listener: (.+)"
@@ -52,7 +59,7 @@ def send_discord_notification(character_name):
         mentions.append(f"<@{config['user_id']}>")
 
     mention_text = " ".join(mentions)
-    message = f"{mention_text} Character **{character_name}** was decloaked!"
+    message = f"{mention_text} Character decloaked: **{character_name}**"
     payload = {"content": message}
     try:
         response = requests.post(config["webhook_url"], json=payload)
