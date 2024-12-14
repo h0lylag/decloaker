@@ -5,6 +5,7 @@ import requests
 import json
 import tkinter as tk
 from tkinter import ttk
+from tkinter import Menu
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 import sys
@@ -17,7 +18,9 @@ config = {
     "mention_role": False,
     "mention_user": False,
     "role_id": "",
-    "user_id": ""
+    "user_id": "",
+    "ignore_mobile_observatory": False,
+    "ignore_stargate": False
 }
 
 # Get the base directory where the script or exe resides
@@ -75,6 +78,11 @@ class LogHandler(FileSystemEventHandler):
             with open(event.src_path, "r", encoding="utf-8", errors="ignore") as file:
                 lines = file.readlines()
                 for line in reversed(lines):
+                    if config["ignore_mobile_observatory"] and "Mobile Observatory" in line:
+                        continue
+                    if config["ignore_stargate"] and "Stargate" in line:
+                        continue
+
                     if re.search(DECLINATION_REGEX, line):
                         timestamp_match = re.match(r"\[ ([^\]]+) \]", line)
                         if timestamp_match:
@@ -140,9 +148,53 @@ def create_gui():
     def toggle_user_entry():
         user_entry.config(state="normal" if user_var.get() else "disabled")
 
+    def open_settings_popup():
+        def save_popup_settings():
+            config["ignore_mobile_observatory"] = mobile_observatory_var.get()
+            config["ignore_stargate"] = stargate_var.get()
+            save_config()
+            popup.destroy()
+
+        popup = tk.Toplevel(root)
+        popup.title("Settings")
+        popup.geometry("300x200")
+
+        # Center the popup over the main window
+        root_x = root.winfo_x()
+        root_y = root.winfo_y()
+        root_width = root.winfo_width()
+        root_height = root.winfo_height()
+        popup_x = root_x + (root_width // 2) - 150
+        popup_y = root_y + (root_height // 2) - 100
+        popup.geometry(f"300x200+{popup_x}+{popup_y}")
+
+        mobile_observatory_var = tk.BooleanVar(value=config["ignore_mobile_observatory"])
+        stargate_var = tk.BooleanVar(value=config["ignore_stargate"])
+
+        frame = ttk.Frame(popup, padding=10)
+        frame.pack(fill="both", expand=True)
+
+        ttk.Checkbutton(frame, text="Ignore Mobile Observatory", variable=mobile_observatory_var).grid(row=0, column=0, sticky="w", pady=5)
+        ttk.Checkbutton(frame, text="Ignore Stargate", variable=stargate_var).grid(row=1, column=0, sticky="w", pady=5)
+
+        # Dummy checkboxes for future options
+        dummy_var1 = tk.BooleanVar(value=False)
+        dummy_var2 = tk.BooleanVar(value=False)
+        ttk.Checkbutton(frame, text="Future Option 1", variable=dummy_var1).grid(row=2, column=0, sticky="w", pady=5)
+        ttk.Checkbutton(frame, text="Future Option 2", variable=dummy_var2).grid(row=3, column=0, sticky="w", pady=5)
+
+        ttk.Button(frame, text="Save", command=save_popup_settings).grid(row=4, column=0, pady=10)
+
     root = tk.Tk()
     root.title("DECLOAKER")
     root.resizable(False, False)  # Prevent resizing
+
+    # Menu bar
+    menubar = Menu(root)
+    settings_menu = Menu(menubar, tearoff=0)
+    settings_menu.add_command(label="Settings", command=open_settings_popup)
+    menubar.add_cascade(label="Options", menu=settings_menu)
+    root.config(menu=menubar)
 
     # Add padding
     padding = 10
@@ -179,7 +231,7 @@ def create_gui():
     user_entry.config(state="normal" if config["mention_user"] else "disabled")
 
     # Add padding between text fields and buttons
-    ttk.Label(root_frame).grid(row=4, column=0, pady=0)  # Empty row for spacing
+    ttk.Label(root_frame).grid(row=4, column=0, pady=10)  # Empty row for spacing
 
     global monitor_button
     monitor_button = ttk.Button(root_frame, text="Start Monitoring", command=toggle_monitoring)
