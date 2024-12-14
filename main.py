@@ -20,7 +20,9 @@ config = {
     "role_id": "",
     "user_id": "",
     "ignore_mobile_observatory": False,
-    "ignore_stargate": False
+    "ignore_stargates": False,
+    "ignore_wormholes": False,
+    "ignore_stations": False
 }
 
 # Get the base directory where the script or exe resides
@@ -80,7 +82,11 @@ class LogHandler(FileSystemEventHandler):
                 for line in reversed(lines):
                     if config["ignore_mobile_observatory"] and "Mobile Observatory" in line:
                         continue
-                    if config["ignore_stargate"] and "Stargate" in line:
+                    if config["ignore_stargates"] and "Stargate" in line:
+                        continue
+                    if config["ignore_wormholes"] and "Wormhole" in line:
+                        continue
+                    if config["ignore_stations"] and "Station" in line:
                         continue
 
                     if re.search(DECLINATION_REGEX, line):
@@ -151,13 +157,15 @@ def create_gui():
     def open_settings_popup():
         def save_popup_settings():
             config["ignore_mobile_observatory"] = mobile_observatory_var.get()
-            config["ignore_stargate"] = stargate_var.get()
+            config["ignore_stargates"] = stargate_var.get()
+            config["ignore_wormholes"] = wormhole_var.get()
+            config["ignore_stations"] = station_var.get()
             save_config()
             popup.destroy()
 
         popup = tk.Toplevel(root)
         popup.title("Settings")
-        popup.geometry("300x200")
+        popup.geometry("300x250")
 
         # Center the popup over the main window
         root_x = root.winfo_x()
@@ -165,23 +173,21 @@ def create_gui():
         root_width = root.winfo_width()
         root_height = root.winfo_height()
         popup_x = root_x + (root_width // 2) - 150
-        popup_y = root_y + (root_height // 2) - 100
-        popup.geometry(f"300x200+{popup_x}+{popup_y}")
+        popup_y = root_y + (root_height // 2) - 125
+        popup.geometry(f"300x250+{popup_x}+{popup_y}")
 
         mobile_observatory_var = tk.BooleanVar(value=config["ignore_mobile_observatory"])
-        stargate_var = tk.BooleanVar(value=config["ignore_stargate"])
+        stargate_var = tk.BooleanVar(value=config["ignore_stargates"])
+        wormhole_var = tk.BooleanVar(value=config["ignore_wormholes"])
+        station_var = tk.BooleanVar(value=config["ignore_stations"])
 
         frame = ttk.Frame(popup, padding=10)
         frame.pack(fill="both", expand=True)
 
         ttk.Checkbutton(frame, text="Ignore Mobile Observatory", variable=mobile_observatory_var).grid(row=0, column=0, sticky="w", pady=5)
-        ttk.Checkbutton(frame, text="Ignore Stargate", variable=stargate_var).grid(row=1, column=0, sticky="w", pady=5)
-
-        # Dummy checkboxes for future options
-        dummy_var1 = tk.BooleanVar(value=False)
-        dummy_var2 = tk.BooleanVar(value=False)
-        ttk.Checkbutton(frame, text="Future Option 1", variable=dummy_var1).grid(row=2, column=0, sticky="w", pady=5)
-        ttk.Checkbutton(frame, text="Future Option 2", variable=dummy_var2).grid(row=3, column=0, sticky="w", pady=5)
+        ttk.Checkbutton(frame, text="Ignore Stargates", variable=stargate_var).grid(row=1, column=0, sticky="w", pady=5)
+        ttk.Checkbutton(frame, text="Ignore Wormholes", variable=wormhole_var).grid(row=2, column=0, sticky="w", pady=5)
+        ttk.Checkbutton(frame, text="Ignore Stations", variable=station_var).grid(row=3, column=0, sticky="w", pady=5)
 
         ttk.Button(frame, text="Save", command=save_popup_settings).grid(row=4, column=0, pady=10)
 
