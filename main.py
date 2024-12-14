@@ -5,10 +5,13 @@ import requests
 import json
 import tkinter as tk
 from tkinter import ttk
-from tkinter import Menu
+from tkinter import Menu, messagebox
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 import sys
+
+# GUI application
+version_number = "0.0.3"
 
 # Default configuration
 config = {
@@ -22,8 +25,14 @@ config = {
     "ignore_mobile_observatory": False,
     "ignore_stargates": False,
     "ignore_wormholes": False,
-    "ignore_stations": False
+    "ignore_stations": False,
+    "ignore_upwell_structures": False
 }
+
+UPWELL_STRUCTURES = [
+    "Astrahus", "Fortizar", "Keepstar", "Raitaru", "Azbel", "Sotiyo", "Athanor",
+    "Tatara", "Ansiblex", "Pharolux", "Tenebrex", "Metenox"
+]
 
 # Get the base directory where the script or exe resides
 if getattr(sys, 'frozen', False):  # Running as a PyInstaller bundle
@@ -88,6 +97,8 @@ class LogHandler(FileSystemEventHandler):
                         continue
                     if config["ignore_stations"] and "Station" in line:
                         continue
+                    if config["ignore_upwell_structures"] and any(structure in line for structure in UPWELL_STRUCTURES):
+                        continue
 
                     if re.search(DECLINATION_REGEX, line):
                         timestamp_match = re.match(r"\[ ([^\]]+) \]", line)
@@ -127,7 +138,6 @@ def stop_monitoring():
         observer = None
     print("Monitoring stopped.")
 
-# GUI application
 def create_gui():
     def toggle_monitoring():
         if monitor_button["text"] == "Start Monitoring":
@@ -160,12 +170,13 @@ def create_gui():
             config["ignore_stargates"] = stargate_var.get()
             config["ignore_wormholes"] = wormhole_var.get()
             config["ignore_stations"] = station_var.get()
+            config["ignore_upwell_structures"] = upwell_var.get()
             save_config()
             popup.destroy()
 
         popup = tk.Toplevel(root)
         popup.title("Settings")
-        popup.geometry("300x250")
+        popup.geometry("300x350")
 
         # Center the popup over the main window
         root_x = root.winfo_x()
@@ -173,13 +184,14 @@ def create_gui():
         root_width = root.winfo_width()
         root_height = root.winfo_height()
         popup_x = root_x + (root_width // 2) - 150
-        popup_y = root_y + (root_height // 2) - 125
-        popup.geometry(f"300x250+{popup_x}+{popup_y}")
+        popup_y = root_y + (root_height // 2) - 175
+        popup.geometry(f"300x350+{popup_x}+{popup_y}")
 
         mobile_observatory_var = tk.BooleanVar(value=config["ignore_mobile_observatory"])
         stargate_var = tk.BooleanVar(value=config["ignore_stargates"])
         wormhole_var = tk.BooleanVar(value=config["ignore_wormholes"])
         station_var = tk.BooleanVar(value=config["ignore_stations"])
+        upwell_var = tk.BooleanVar(value=config["ignore_upwell_structures"])
 
         frame = ttk.Frame(popup, padding=10)
         frame.pack(fill="both", expand=True)
@@ -188,19 +200,30 @@ def create_gui():
         ttk.Checkbutton(frame, text="Ignore Stargates", variable=stargate_var).grid(row=1, column=0, sticky="w", pady=5)
         ttk.Checkbutton(frame, text="Ignore Wormholes", variable=wormhole_var).grid(row=2, column=0, sticky="w", pady=5)
         ttk.Checkbutton(frame, text="Ignore Stations", variable=station_var).grid(row=3, column=0, sticky="w", pady=5)
+        ttk.Checkbutton(frame, text="Ignore Upwell Structures", variable=upwell_var).grid(row=4, column=0, sticky="w", pady=5)
 
-        ttk.Button(frame, text="Save", command=save_popup_settings).grid(row=4, column=0, pady=10)
+        ttk.Button(frame, text="Save", command=save_popup_settings).grid(row=5, column=0, pady=10)
+
+    def show_about():
+        about_text = (
+            "DECLOAKER is a tool for EVE Online that notifies you when you get decloaked. Pretty straightforward.\n\n"
+            f"Version: {version_number}\n\n"
+            "Made by h0ly lag"
+        )
+        tk.messagebox.showinfo("About DECLOAKER", about_text)
 
     root = tk.Tk()
     root.title("DECLOAKER")
     root.resizable(False, False)  # Prevent resizing
-
+    
     # Menu bar
     menubar = Menu(root)
-    settings_menu = Menu(menubar, tearoff=0)
-    settings_menu.add_command(label="Settings", command=open_settings_popup)
-    menubar.add_cascade(label="Options", menu=settings_menu)
+    menubar.add_command(label="Options", command=open_settings_popup)
     root.config(menu=menubar)
+
+    # Add the "About" button as a root-level menu item
+    menubar.add_command(label="About", command=show_about)
+
 
     # Add padding
     padding = 10
