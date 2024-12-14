@@ -237,7 +237,7 @@ def create_gui():
     user_entry.config(state="normal" if config["mention_user"] else "disabled")
 
     # Add padding between text fields and buttons
-    ttk.Label(root_frame).grid(row=4, column=0, pady=10)  # Empty row for spacing
+    ttk.Label(root_frame).grid(row=4, column=0, pady=0)  # Empty row for spacing
 
     global monitor_button
     monitor_button = ttk.Button(root_frame, text="Start Monitoring", command=toggle_monitoring)
