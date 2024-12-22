@@ -4,3 +4,4 @@ dist/
 main.build/
 *.exe
 decloaker.spec
+*.bak
