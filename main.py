@@ -24,7 +24,9 @@ config = {
     "ignore_stations": False,
     "ignore_citadels": False,
     "custom_message_enabled": False,
-    "custom_message": "Character decloaked: **{CHARNAME}**"
+    "custom_message": "Character decloaked: **{CHARNAME}**",
+    "multi_ping_enabled": False,
+    "multi_ping_count": 2
 }
 
 citadels = [
@@ -77,8 +79,9 @@ def send_discord_notification(character_name):
 
     payload = {"content": f"{mention_text} {message}"}
     try:
-        response = requests.post(config["webhook_url"], json=payload)
-        response.raise_for_status()
+        for _ in range(config["multi_ping_count"] if config["multi_ping_enabled"] else 1):
+            response = requests.post(config["webhook_url"], json=payload)
+            response.raise_for_status()
     except requests.exceptions.RequestException as e:
         print(f"Failed to send notification: {e}")
 
@@ -163,6 +166,8 @@ def create_gui():
         config["ignore_citadels"] = upwell_var.get()
         config["custom_message_enabled"] = custom_message_var.get()
         config["custom_message"] = custom_message_entry.get()
+        config["multi_ping_enabled"] = multi_ping_var.get()
+        config["multi_ping_count"] = int(multi_ping_count.get())
         save_config()
         print("Settings saved.")
 
@@ -214,8 +219,16 @@ def create_gui():
     custom_message_entry.insert(0, config["custom_message"])
     custom_message_entry.config(state="normal" if config["custom_message_enabled"] else "disabled")
 
+    # Multi-Ping Section
+    multi_ping_var = tk.BooleanVar(value=config["multi_ping_enabled"])
+    ttk.Checkbutton(root_frame, text="Multi-Ping", variable=multi_ping_var, command=lambda: toggle_entry_state(multi_ping_count, multi_ping_var)).grid(row=6, column=0, sticky="w")
+    multi_ping_count = ttk.Combobox(root_frame, values=[2, 3, 4, 5], state="readonly", width=5)
+    multi_ping_count.grid(row=6, column=1, sticky="w")
+    multi_ping_count.set(str(config["multi_ping_count"]))
+    multi_ping_count.config(state="normal" if config["multi_ping_enabled"] else "disabled")
+
     # Extra Options Section
-    ttk.Label(root_frame, text="Extra Options", font=("Arial", 10, "bold")).grid(row=6, column=0, columnspan=3, sticky="w", pady=(10, 5))
+    ttk.Label(root_frame, text="Extra Options", font=("Arial", 10, "bold")).grid(row=7, column=0, columnspan=3, sticky="w", pady=(10, 5))
 
     mobile_observatory_var = tk.BooleanVar(value=config["ignore_mobile_observatory"])
     stargate_var = tk.BooleanVar(value=config["ignore_stargates"])
@@ -223,19 +236,19 @@ def create_gui():
     station_var = tk.BooleanVar(value=config["ignore_stations"])
     upwell_var = tk.BooleanVar(value=config["ignore_citadels"])
 
-    ttk.Checkbutton(root_frame, text="Ignore Stargates", variable=stargate_var).grid(row=7, column=0, sticky="w")
-    ttk.Checkbutton(root_frame, text="Ignore Wormholes", variable=wormhole_var).grid(row=7, column=1, sticky="w")
-    ttk.Checkbutton(root_frame, text="Ignore Stations", variable=station_var).grid(row=8, column=0, sticky="w")
-    ttk.Checkbutton(root_frame, text="Ignore Mobile Observatory", variable=mobile_observatory_var).grid(row=8, column=1, sticky="w")
-    ttk.Checkbutton(root_frame, text="Ignore Citadels", variable=upwell_var).grid(row=9, column=0, sticky="w")
+    ttk.Checkbutton(root_frame, text="Ignore Stargates", variable=stargate_var).grid(row=8, column=0, sticky="w")
+    ttk.Checkbutton(root_frame, text="Ignore Wormholes", variable=wormhole_var).grid(row=8, column=1, sticky="w")
+    ttk.Checkbutton(root_frame, text="Ignore Stations", variable=station_var).grid(row=9, column=0, sticky="w")
+    ttk.Checkbutton(root_frame, text="Ignore Mobile Observatory", variable=mobile_observatory_var).grid(row=9, column=1, sticky="w")
+    ttk.Checkbutton(root_frame, text="Ignore Citadels", variable=upwell_var).grid(row=10, column=0, sticky="w")
 
-    ttk.Label(root_frame, text="").grid(row=10, column=0, columnspan=3)  # Blank row
+    ttk.Label(root_frame, text="").grid(row=11, column=0, columnspan=3)  # Blank row
 
     monitor_button = ttk.Button(root_frame, text="Start Monitoring", command=toggle_monitoring)
-    monitor_button.grid(row=11, column=0, sticky="w")
+    monitor_button.grid(row=12, column=0, sticky="w")
 
     save_button = ttk.Button(root_frame, text="Apply Settings", command=save_settings)
-    save_button.grid(row=11, column=1, columnspan=2, sticky="e")
+    save_button.grid(row=12, column=1, columnspan=2, sticky="e")
 
     root.mainloop()
 
